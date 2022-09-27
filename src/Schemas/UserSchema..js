@@ -5,7 +5,12 @@ const userSchema = yup.object().shape({
     email: yup.string().email().required(),
     age: yup.number().min(18).required(),
     password: yup.string().required().min(6)
+});
+
+const credentialsUserSchema = yup.object().shape({
+    email: yup.string().email().required(),
+    password: yup.string().required().min(6)
 })
 
 
-module.exports = userSchema
+module.exports = { userSchema, credentialsUserSchema }

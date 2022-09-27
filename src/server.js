@@ -1,16 +1,19 @@
 const express = require('express');
-const uuid = require('uuid');
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcrypt');
 const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 
 dotenv.config()
 
 const app = express()
 
 const pool = require('./connect');
-const validate = require('./middleware/validate');
-const userSchema = require('./Schemas/UserSchema.');
+
 pool.connect()
+
+const validate = require('./middleware/validate');
+
+const { userSchema, credentialsUserSchema } = require('./Schemas/UserSchema.');
 
 const port = 3333;
 
@@ -34,6 +37,39 @@ app.post('/singup', validate(userSchema), async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: 'Error in the server' })
+    }
+});
+
+app.post('/login', validate(credentialsUserSchema), async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        const user = await pool.query('SELECT * FROM users WHERE email = ($1)', [email])
+
+        const { id, name, email: emailUser, age, createdon } = user.rows[0]
+
+        const checkPassword = await bcrypt.compare(password, user.rows[0].password)
+
+        if (!checkPassword) {
+            return res.status(401).json({ message: 'insert incorrect password!' })
+        }
+
+        const secret = process.env.SECRET;
+
+        const token = jwt.sign(
+            {
+                id: user.rows[0].id
+            },
+            secret
+        )
+
+        const userResponse = { user: { id, name, emailUser, age, createdon }, token }
+
+        return res.json(userResponse)
+
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: error })
     }
 })
 
