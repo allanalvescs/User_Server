@@ -14,6 +14,7 @@ pool.connect()
 const validate = require('./middleware/validate');
 
 const { userSchema, credentialsUserSchema } = require('./Schemas/UserSchema.');
+const authenticatedUser = require('./middleware/userAuthenticated');
 
 const port = 3333;
 
@@ -70,6 +71,17 @@ app.post('/login', validate(credentialsUserSchema), async (req, res) => {
     } catch (error) {
         console.log(error)
         return res.status(500).json({ message: error })
+    }
+});
+
+app.get('/users', authenticatedUser, async (req, res) => {
+    try {
+        const users = await pool.query('SELECT * FROM users')
+
+        return res.status(200).json(users.rows)
+    } catch (error) {
+        console.log(error)
+        return res.status(500).json({ message: 'Error in the server' })
     }
 })
 
